@@ -13,12 +13,14 @@
 ##                 Install epel package on Redhat distros                       ## 
 ##################################################################################
 
-    - name: "Amazon Linux 2: Install the EPEL package"
+    - name: "Redhat: Install the EPEL package"
       package:
         name: epel-release
         state: present
       when:
         - ansible_os_family == 'RedHat'
+        - ansible_distribution != 'Amazon'
+      failed_when: false
 
 ##################################################################################
 ##                   Install epel package on Amazon Linux 2                     ## 
