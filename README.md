@@ -1,7 +1,6 @@
 # clamav-onacc
 
 ## Supported Linux distros
-* CentOS 8
 * Debian 9
 * Debian 10
 * Ubuntu 16.04
@@ -10,7 +9,7 @@
 
 ### Qualified support
 There is qualified support for other distros:
-* `clamonacc` executable fails on EL7 and Amazon Linux 2:
+* EL7 and Amazon Linux 2: `clamonacc` executable fails with:
 
     ```
     Version of curl is too low to use fdpassing. Please use tcp socket streaming instead
@@ -18,9 +17,11 @@ There is qualified support for other distros:
 
     On-demand scanning with `clamscan` works, however.
 
-* RHEL 8 packages are not available on the Amazon Web Service could provider
+* RHEL 8 (Amazon Web Service cloud provider): packages are not available
 
-* `clamonacc` does not prevent access of files on CentOS 8 although `clamscan` works fine
+  * EL8 packages are available on Google Cloud Provider
+
+* CentOS 8: `clamonacc` does not prevent access of files although `clamscan` works fine
 
 ## Installation
 This Ansible playbook installs the ClamAV packages on one or more target Linux servers with on-access scanning for user directories.  It heavily relies on https://github.com/geerlingguy/ansible-role-clamav and customizes the target system a little further.
