@@ -1,0 +1,36 @@
+- name: Test on-demand scanning after clamav-onacc.yml playbook is run
+  hosts: "{{ hosts }}"
+  tasks:
+    - name: Ensure wget is installed
+      package:
+        name: wget
+        state: present
+      become: true
+
+    - name: Download test infected file
+      command: "wget -O {{ test_file_name }} https://secure.eicar.org/eicar.com.txt"
+      notify: Remove test file
+
+    - name: Scan the infected file
+      command: "clamscan {{ test_file_name }}"
+      register: scan_infected_file
+      failed_when: false
+
+    - name: Display clamscan output
+      debug:
+        var: scan_infected_file.stdout_lines
+      failed_when: "scan_infected_file.rc == 0 or (scan_infected_file.stdout | regex_search(test_file_name + '.*EICAR.*FOUND', multiline=True)) == ''"
+
+    - name: Ensure clamscan reports on infected file
+      fail:
+        msg: clamscan did not report on infected file
+      when: "scan_infected_file.rc == 0 or (scan_infected_file.stdout | regex_search(test_file_name + '.*EICAR.*FOUND', multiline=True)) == ''"
+
+  handlers:
+    - name: Remove test file
+      file:
+        path: "{{ test_file_name }}"
+        state: absent
+
+  vars:
+    test_file_name: "/tmp/eicar-test-{{ ansible_date_time.iso8601 }}"
