@@ -1,0 +1,9 @@
+clamav_cfg_file_name: /etc/clamd.d/scan.conf
+
+clamav_clam_user: clamscan
+
+clamav_scan_service_name: "clamd@scan"
+clamav_freshclam_service_name: "clamd-freshclam"
+
+clamav_freshclam_command: "/usr/bin/freshclam --daemon --checks {{ clamav_freshclam_checks_per_day }}"
+clamonacc_executable: "/usr/bin/clamonacc"

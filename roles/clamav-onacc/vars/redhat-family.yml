@@ -1,0 +1,5 @@
+cron_package_name: "cronie"
+
+clamonacc_executable: "/usr/sbin/clamonacc"
+
+lib_systemd_system_root: "/usr/lib/systemd/system"

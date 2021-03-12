@@ -1,0 +1,5 @@
+- name: Install ClavAV with customizations
+  hosts: "{{ hosts }}"
+  become: true
+  roles:
+    - role: clamav-onacc

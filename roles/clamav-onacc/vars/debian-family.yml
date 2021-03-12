@@ -1,0 +1,12 @@
+cron_package_name: "cron"
+
+clamav_cfg_file_name: /etc/clamav/clamd.conf
+
+clamav_clam_user: clamav
+
+clamav_scan_service_name: "clamav-daemon"
+clamav_freshclam_service_name: "clamav-freshclam"
+
+clamav_freshclam_command: "/usr/bin/freshclam --daemon --foreground=true --checks {{ clamav_freshclam_checks_per_day }}"
+
+lib_systemd_system_root: "/lib/systemd/system"

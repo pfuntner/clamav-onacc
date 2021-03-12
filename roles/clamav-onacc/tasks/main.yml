@@ -1,0 +1,108 @@
+
+#  These are the variables for the OS family across all distros
+#
+#  Currently supported:
+#      alpine-family.yml   -  Covers Alpine (container-only)
+#      debian-family.yml   -  Covers Ubuntu 16, 18 & 20 and Debian 8, 9 & 10
+#      redhat-family.yml   -  Covers EL 6, 7 & 8; Amazon Linux
+
+    - name: Gather OS family variables
+      include_vars: "{{ ansible_os_family | lower }}-family.yml"
+
+##################################################################################
+##                 Install epel package on Redhat distros                       ## 
+##################################################################################
+
+    - name: "Amazon Linux 2: Install the EPEL package"
+      package:
+        name: epel-release
+        state: present
+      when:
+        - ansible_os_family == 'RedHat'
+
+##################################################################################
+##                   Install epel package on Amazon Linux 2                     ## 
+##                                                                              ##
+## See: https://aws.amazon.com/premiumsupport/knowledge-center/ec2-enable-epel/ ##
+##################################################################################
+
+    - name: "Amazon Linux 2: Install the EPEL release package and enable the EPEL repository"
+      command: amazon-linux-extras install epel -y
+      when:
+        - ansible_distribution == 'Amazon'
+        - ansible_distribution_major_version == '2'
+
+##################################################################################
+##                                Install ClamAV                                ##
+##                                                                              ##
+##    Uses the geerlingguy/ansible-role-clamav Ansible role to install the      ##
+##    ClamAV packages, set up services, etc.                                    ##
+##                                                                              ##
+##################################################################################
+
+    - name: Install ClamAV
+      include_role:
+        name: ansible-role-clamav
+
+##################################################################################
+##                      Set up common config statements                         ##
+##                                                                              ##
+##    Set up some common ClamAV configuration statement.                        ##
+##                                                                              ##
+##################################################################################
+    - name: Set up common config statements
+      lineinfile:
+        dest: "{{ clamav_cfg_file_name }}"
+        line: "{{ item[0] }}"
+        regexp: "{{ item[1] }}"
+      loop:
+        - ["OnAccessPrevention yes", '^OnAccessPrevention\s+']
+        - ["OnAccessExcludeUname {{ clamav_clam_user }}", '^OnAccessExcludeUname\s+']
+      register: add_common_config_rules
+
+##################################################################################
+##                      Set up file config statements                           ##
+##                                                                              ##
+##    Set up some ClamAV configuration statements to scan files.                ##
+##                                                                              ##
+##################################################################################
+    - name: Set up file config statements
+      lineinfile:
+        dest: "{{ clamav_cfg_file_name }}"
+        line: "OnAccessIncludePath {{ item }}"
+        regexp: "^OnAccessIncludePath\\s+{{ item }}"
+      loop: "{{ clamav_files_to_scan }}"
+      register: add_file_config_rules
+
+##################################################################################
+##                      Update freshclam frequency                              ##
+##                                                                              ##
+##    The freshclam service specifies how many times per day it will check for  ##
+##    updates to the virus definitions.                                         ##
+##                                                                              ##
+##################################################################################
+    - name: Update freshclam frequency
+      lineinfile:
+        dest: "{{ lib_systemd_system_root }}/{{ clamav_freshclam_service_name }}.service"
+        line: "ExecStart={{ clamav_freshclam_command }}"
+        regexp: '^ExecStart\s*='
+      register: update_fresclam_frequency
+
+##################################################################################
+##                      Restart freshclam service                               ##
+##                                                                              ##
+##    Restart the freshclam service if the frequency was updated.               ##
+##                                                                              ##
+##################################################################################
+    - name: Restart freshclam service
+      systemd:
+        name: "{{ clamav_freshclam_service_name }}"
+        state: restarted
+        daemon_reload: true
+      when: update_fresclam_frequency.changed == true
+
+##################################################################################
+##                       Set up on-access scanning                              ##
+##################################################################################
+    - name: Set up on-access scanning
+      import_tasks: setup_clamav_clamonacc.yml

@@ -1,0 +1,15 @@
+# /etc/systemd/system/clamonacc.service
+[Unit]
+Description=ClamAV On Access Scanner
+Requires={{ clamav_scan_service_name }}.service
+After={{ clamav_scan_service_name }}.service syslog.target network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart={{ clamonacc_executable }} -F
+Restart=on-failure
+RestartSec=120s
+
+[Install]
+WantedBy=multi-user.target

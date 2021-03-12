@@ -1,0 +1,9 @@
+[Unit]
+Description=Start the clamonacc service on reboot
+
+[Timer]
+OnBootSec=1 m
+Unit=clamonacc@timer.service
+
+[Install]
+WantedBy=basic.target

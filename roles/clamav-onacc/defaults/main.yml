@@ -1,0 +1,8 @@
+# List of files to scan
+clamav_files_to_scan:
+  - /home
+  - /root
+
+# The number of times per day the freshclam service will check for 
+# virus definitions.
+clamav_freshclam_checks_per_day: 1

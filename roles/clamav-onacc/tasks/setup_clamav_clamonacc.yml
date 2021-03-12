@@ -1,0 +1,29 @@
+# These tasks start the clamonacc daemon to provide on-access scanning
+
+- name: Create on-access scanning service
+  block:
+    - name: Add clamonacc service
+      template:
+        src: "clamonacc-service.j2"
+        dest: "{{ lib_systemd_system_root }}/clamonacc.service"
+      register: add_clamonacc_service
+
+    - name: Enable clamonacc service to start at boot
+      systemd:
+        name: "clamonacc.service"
+        enabled: yes
+        masked: no
+
+    - name: Do a daemon reload
+      systemd:
+        daemon_reload: yes
+      when:
+        - add_clamonacc_service.changed == True
+
+    - name: Start clamonacc service now
+      service:
+        name: clamonacc
+        state: started
+
+  when:
+    - ansible_service_mgr == "systemd"
