@@ -1,5 +1,53 @@
-- name: Install ClavAV with customizations
+- name: Test on-access scanning after clamav-onacc.yml playbook is run
   hosts: "{{ hosts }}"
-  become: true
-  roles:
-    - role: clamav-onacc
+  tasks:
+    - name: Verify clamonacc executable is running
+      command: "pgrep [c]lamonacc"
+      register: verify_clamonacc_executable
+      failed_when: verify_clamonacc_executable.rc != 0
+
+    - name: Ensure CONFIG_FANOTIFY=y is enabled
+      shell: "grep ^CONFIG_FANOTIFY=y /boot/config-$(uname -r)"
+      register: fanotify_check
+      failed_when: fanotify_check.rc != 0
+      become: true
+
+    - name: Ensure CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y is enabled
+      shell: "grep ^CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y /boot/config-$(uname -r)"
+      register: fanotify_access_permissions_check
+      failed_when: fanotify_access_permissions_check.rc != 0
+      become: true
+
+    - name: Verify on-access scanning is enabled in the configuration file
+      command: "grep '^OnAccessPrevention yes' {{ cfg_file_name }}"
+      become: true
+
+    - name: Ensure wget is installed
+      package:
+        name: wget
+        state: present
+      become: true
+
+    - name: Download test infected file
+      command: "wget -O {{ test_file_name }} https://secure.eicar.org/eicar.com.txt"
+      notify: Remove test file
+
+    - name: Verify the file cannot be accessed
+      command: "cat {{ test_file_name }}"
+      register: access_infected_file
+      failed_when: access_infected_file.rc == 0 or 'Operation not permitted' not in access_infected_file.stderr
+
+    - name: Verify event in ClamAV log file
+      command: "grep '{{ test_file_name }}.*[F]OUND' {{ clam_log_file_name }}"
+      become: true
+
+  handlers:
+    - name: Remove test file
+      file:
+        path: "{{ test_file_name }}"
+        state: absent
+
+  vars:
+    cfg_file_name: "{{ '/etc/clamav/clamd.conf' if ansible_os_family == 'Debian' else '/etc/clamd.d/scan.conf' }}"
+    test_file_name: "eicar-test-{{ ansible_date_time.iso8601 }}"
+    clam_log_file_name: "/var/log/clamav/clamav.log"
